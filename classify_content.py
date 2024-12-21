@@ -5,6 +5,7 @@ import asyncio
 from typing import List
 import dotenv
 import os
+from argparse import ArgumentParser
 
 dotenv.load_dotenv(override=True)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -33,7 +34,7 @@ Response in JSON format:
 
 ADVANCED_ANALYSIS_PROMPT_TEMPLATE = """
 You are a helpful assistant that classifies the news content if it is related to the 
-China's comminty of shared future initiative:
+China's community of shared future initiative:
 
 The Community of Shared Future for Mankind is a concept proposed by the Communist Party of China. It emphasizes the importance of international cooperation and mutual benefit, as well as the need for countries to work together to address global challenges.
 
@@ -47,12 +48,22 @@ These are the keywords related to the Community of Shared Future for Mankind:
 {keywords}
 Count the number of times the keywords appear in the content.
 
+Also classify the article type based on these criteria:
+1. Interview (Phỏng vấn): Question-answer format, dialogue between reporter and interviewee
+2. Short News (Tin Ngắn): 60-100 words, complete but concise information
+3. Medium News (Tin Vừa): 80-200 words, more detailed than short news
+4. In-depth News (Tin Sâu): Up to 400 words, detailed analysis with multiple perspectives
+5. Chronicle News (Tin Tường Thuật): ~200 words, chronological reporting of events
+6. Commentary (Bình luận): 200-3000 words, expressing personal viewpoints with clear stance
+
 Response in JSON format:
 {{
     "title": "the title of the news",
-    "is_title_contain_shared_future": true/false # if the title contains the keywords related to the Community of Shared Future for Mankind
-    "sentiment": "positive"/"negative"/"neutral"/"concerned"
-    "main_keywords": [("keyword1", 3), ("keyword2", 4), ("keyword3", 2)] # the keywords and the number of times they appear in the content
+    "is_title_contain_shared_future": true/false, # if the title contains the keywords related to the Community of Shared Future for Mankind
+    "sentiment": "positive"/"negative"/"neutral"/"concerned",
+    "main_keywords": [("keyword1", 3), ("keyword2", 4), ("keyword3", 2)], # the keywords and the number of times they appear in the content
+    "article_type": "Interview"/"Short News"/"Medium News"/"In-depth News"/"Chronicle News"/"Commentary", # classify based on format and length
+    "article_type_reason": "Brief explanation of why this article type was chosen"
 }}
 """
 
@@ -89,7 +100,9 @@ async def process_batch(items: List[dict]) -> List[dict]:
             'title': analysis_result['title'],
             'is_title_contain_shared_future': analysis_result['is_title_contain_shared_future'],
             'sentiment': analysis_result['sentiment'],
-            'main_keywords': analysis_result['main_keywords']
+            'main_keywords': analysis_result['main_keywords'],
+            'article_type': analysis_result['article_type'],
+            'article_type_reason': analysis_result['article_type_reason']
         })
     
     return items
@@ -100,8 +113,9 @@ async def main(input_file):
     
     # Process content in batches of 5
     batch_size = 5
-    processed_content = []
-    
+    processed_content = [article for article in content if 'is_related' in article.keys()]
+    content = [article for article in content if 'is_related' not in article.keys()]
+
     for i in range(0, len(content), batch_size):
         batch = content[i:i + batch_size]
         processed_batch = await process_batch(batch)
@@ -114,7 +128,10 @@ async def main(input_file):
     print(f"Processed {len(processed_content)} articles")
 
 if __name__ == "__main__":
-    asyncio.run(main('processed_articles_st.json'))
-    asyncio.run(main('processed_articles_flp_.json'))
-    asyncio.run(main('processed_articles_jkt_.json'))
-    asyncio.run(main('processed_articles_bk.json'))
+    parser = ArgumentParser()
+    parser.add_argument("--input_file", type=str, default="processed_articles_mnl_times.json")
+    args = parser.parse_args()
+    asyncio.run(main(args.input_file))
+    # asyncio.run(main('processed_articles_flp_.json'))
+    # asyncio.run(main('processed_articles_jkt_.json'))
+    # asyncio.run(main('processed_articles_bk.json'))

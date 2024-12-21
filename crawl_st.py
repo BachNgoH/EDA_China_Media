@@ -11,7 +11,7 @@ from datetime import datetime
 
 # Constants
 BASE_URL = "https://www.straitstimes.com/search"
-WAIT_TIME = 10
+WAIT_TIME = 2
 
 class SearchResult(BaseModel):
     link: str
@@ -52,7 +52,7 @@ async def search(query: str):
         
         # Wait for the "Within a Year" link and click it
         wait = WebDriverWait(driver, WAIT_TIME)
-        year_filter = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'within a year')]")))
+        year_filter = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'within three years')]")))
         year_filter.click()
         
         # Wait for the page to load after filter
@@ -116,16 +116,29 @@ async def search(query: str):
         }
 
 if __name__ == "__main__":
-    
+
     search_queries = [
+        "Belt and Road Initiative",
+        "Community of Common Destiny",
         "Community of Shared Future",
-        "Belt and Road Initiative"
-    ]
-    
+        "Community of Common Destiny of Mankind",
+        "Asia Infrastructure Investment Bank",
+        "Global Security Initiative",
+        "Global Development Initiative",
+        "Global Civilization Initiative",
+        "China's Influence",
+        "China Soft Power",
+        "China's Global Strategy",
+        "China's Global Policy",
+        "China's Global Influence",
+        "China's Dream",
+        "ASEAN Perception"
+    ]   
     url_list = []
     for search_query in search_queries:
         search_results = asyncio.run(search(search_query))
-        
+        if search_results["status"] != 200:
+            continue
         for search_res in search_results["data"]:
             url_list.append({
                 "url": search_res.link, 
@@ -133,5 +146,5 @@ if __name__ == "__main__":
             })
     
     # save the url_list to a json file
-    with open("st_url_list.json", "w") as f:
+    with open("url_list_st.json", "w") as f:
         json.dump(url_list, f) 

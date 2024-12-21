@@ -2,7 +2,7 @@ from urllib.parse import unquote
 import json
 from datetime import datetime
 
-with open('bk_url_list.json', 'r', encoding='utf-8') as f:
+with open('data/bk_url_list.json', 'r', encoding='utf-8') as f:
     urls = json.load(f)
 
 for url in urls:
@@ -18,8 +18,8 @@ for url in urls:
     url['url'] = decoded_href
 
 # filter the urls from September 2023 to October 2024
-urls = [url for url in urls if datetime.strptime(url['date'], '%Y-%m-%d') >= datetime(2023, 9, 1) and datetime.strptime(url['date'], '%Y-%m-%d') <= datetime(2024, 10, 31)]
+urls = [url for url in urls if datetime.strptime(url['date'], '%Y-%m-%d') >= datetime(2023, 9, 1) and datetime.strptime(url['date'], '%Y-%m-%d') <= datetime(2024, 11, 30)]
 
-with open('bk_url_list_clean.json', 'w', encoding='utf-8') as f:
+with open('data/bk_url_list_clean.json', 'w', encoding='utf-8') as f:
     json.dump(urls, f, ensure_ascii=False, indent=4)
     

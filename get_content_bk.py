@@ -84,11 +84,15 @@ def scrape_article(driver, url, date):
 
 def main():
     # Get unprocessed URLs
-    with open('bk_url_list_clean.json', 'r') as f:
-        urls_to_process = json.load(f)
+    with open('./data/bk_url_list_clean.json', 'r') as f:
+        urls = json.load(f)
         
+    # first load the processed articles
+    with open('./data/processed_articles_bk_classified.json', 'r') as f:
+        processed_articles = json.load(f)
+
+    urls_to_process = get_unprocessed_urls(processed_articles, urls)
     driver = setup_driver()
-    processed_articles = []
 
     # Process each unprocessed URL
     for i, item in enumerate(urls_to_process):

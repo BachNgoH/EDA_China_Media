@@ -1,0 +1,3 @@
+python crawl_mnl_times.py
+python get_content_mnl_times.py
+python classify_content.py --input_file processed_articles_mnl_times.json

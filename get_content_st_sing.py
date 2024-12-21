@@ -12,14 +12,37 @@ import os
 import logging
 from datetime import datetime
 
+
 def setup_driver():
-    chrome_options = Options()
-    chrome_options.add_argument('--disable-gpu')
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--disable-dev-shm-usage')
+    """
+    Opens a Chrome browser using Selenium WebDriver with specified options.
     
-    # Initialize the Chrome WebDriver
-    driver = webdriver.Chrome(options=chrome_options)
+    Args:
+        url (str): The URL path or full URL to open
+        base_url (str, optional): Base URL to prepend to the url parameter
+        
+    Returns:
+        webdriver.Chrome: Configured Chrome WebDriver instance
+    """
+    options = webdriver.ChromeOptions()
+    # Add headless mode
+    options.add_argument('--headless')
+    
+    # Optimize performance
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--disable-features=NetworkService')
+    options.add_argument('--disable-extensions')
+    options.add_argument('--disable-infobars')
+    options.add_argument('--disable-notifications')
+    options.add_argument('--blink-settings=imagesEnabled=false')  # Disable images loading
+    options.page_load_strategy = 'eager'
+    
+    driver = webdriver.Chrome(options=options)
+    driver.set_page_load_timeout(20)  # Reduced timeout
+    driver.set_script_timeout(20)     # Reduced timeout
+    
     return driver
 
 def clean_content(element):
@@ -61,28 +84,21 @@ def get_unprocessed_urls(processed_articles, new_urls):
     # Filter out already processed URLs
     return [item for item in new_urls if item['url'] not in processed_urls]
 
-def scrape_article(driver, url):
+def scrape_article(driver, url, date):
     try:
         driver.get(url)
         time.sleep(2)
         
         wait = WebDriverWait(driver, 10)
-        article = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "article-content-rawhtml")))
-        
-        # Get the date if available
-        try:
-            date_element = driver.find_element(By.CLASS_NAME, "post-date")
-            date = date_element.text
-        except:
-            date = datetime.now().strftime("%Y-%m-%d")
+        article = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "article-content")))
         
         # Clean and get the content
         content = clean_content(article)
         
         return {
             "url": url,
-            "date": date,
             "content": content,
+            "date": date
         }
     
     except Exception as e:
@@ -92,8 +108,11 @@ def scrape_article(driver, url):
 def main():
     # Load existing processed articles    
     # Load new URLs to process
-    with open('st_url_list.json', 'r') as f:
+    with open('url_list_st.json', 'r') as f:
         new_urls = json.load(f)
+
+    # Remove the date before September 2023
+    new_urls = [item for item in new_urls if datetime.strptime(item['date'], '%Y-%m-%d') >= datetime(2023, 9, 1)]
     
     processed_articles = []
     driver = setup_driver()
@@ -102,13 +121,12 @@ def main():
     for i, item in enumerate(new_urls):
         url = item['url']
         print(f"Processing {i+1}/{len(new_urls)}: {url}")
-        
-        article_data = scrape_article(driver, url)
+        article_data = scrape_article(driver, url, item['date'])
         if article_data:
             processed_articles.append(article_data)
             
             # Save progress after each successful scrape
-            with open('processed_articles_2.json', 'w', encoding='utf-8') as f:
+            with open('processed_articles_st.json', 'w', encoding='utf-8') as f:
                 json.dump(processed_articles, f, ensure_ascii=False, indent=2)
             
             print(f"Saved article data. Total processed: {len(processed_articles)}")
