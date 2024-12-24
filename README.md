@@ -17,6 +17,8 @@
 
 ## Details
 
+    Password Bin123456
+
 ```bash
 ● /api/category
   > Menampilkan data kategori dan sub kategori.
